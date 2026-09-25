@@ -1,0 +1,35 @@
+# /etc/systemd/system/comfyui.service
+# Headless ComfyUI engine for the FastH3 pipeline.
+# Install ComfyUI with comfy-cli first (see deploy/bare-metal/README.md):
+#   comfy-cli install --skip-manager --nvidia --version 0.36.0
+# then download the 4 model files listed in docs/minimax-h3-fastvideo.md.
+
+[Unit]
+Description=ComfyUI headless engine (FastH3)
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=simple
+User=comfy
+Group=comfy
+WorkingDirectory=/home/comfy/ComfyUI
+# uv-managed engine environment created with:
+#   uv venv --python 3.11 /home/comfy/.venv
+#   uv pip install --python /home/comfy/.venv comfy-cli
+#   comfy install --nvidia --skip-manager --version 0.36.0 --fast-deps
+ExecStart=/home/comfy/.venv/bin/python main.py \
+    --listen 127.0.0.1 --port 8188 --fast
+Environment=PYTHONUNBUFFERED=1
+# uv is only needed for installs/updates, but keep its cache user-local so
+# `comfy update` works when run as this user.
+Environment=UV_LINK_MODE=copy
+Environment=UV_CACHE_DIR=/home/comfy/.cache/uv
+# Preload the models once so the first API job is not a cold start.
+# Environment=COMFYUI_PRELOAD=1
+Restart=always
+RestartSec=10
+TimeoutStopSec=120
+
+[Install]
+WantedBy=multi-user.target

@@ -1,0 +1,261 @@
+{
+  "s11": {
+    "class_type": "VAELoader",
+    "inputs": {
+      "vae_name": "minimax_h3_video_vae_int8_convrot.safetensors"
+    }
+  },
+  "s24": {
+    "class_type": "VAELoader",
+    "inputs": {
+      "vae_name": "minimax_h3_audio_vae_fp32.safetensors"
+    }
+  },
+  "s23": {
+    "class_type": "VAEDecodeAudio",
+    "inputs": {
+      "samples": [
+        "s14",
+        0
+      ],
+      "vae": [
+        "s24",
+        0
+      ]
+    }
+  },
+  "s10": {
+    "class_type": "VAEDecode",
+    "inputs": {
+      "samples": [
+        "s14",
+        0
+      ],
+      "vae": [
+        "s11",
+        0
+      ]
+    }
+  },
+  "s17": {
+    "class_type": "KSamplerSelect",
+    "inputs": {
+      "sampler_name": "res_multistep"
+    }
+  },
+  "s9": {
+    "class_type": "BasicScheduler",
+    "inputs": {
+      "model": [
+        "s127",
+        0
+      ],
+      "scheduler": "simple",
+      "steps": 8,
+      "denoise": 1
+    }
+  },
+  "s14": {
+    "class_type": "SamplerCustomAdvanced",
+    "inputs": {
+      "noise": [
+        "s15",
+        0
+      ],
+      "guider": [
+        "s16",
+        0
+      ],
+      "sampler": [
+        "s17",
+        0
+      ],
+      "sigmas": [
+        "s9",
+        0
+      ],
+      "latent_image": [
+        "s104",
+        1
+      ]
+    }
+  },
+  "s16": {
+    "class_type": "BasicGuider",
+    "inputs": {
+      "model": [
+        "s127",
+        0
+      ],
+      "conditioning": [
+        "s104",
+        0
+      ]
+    }
+  },
+  "s6": {
+    "class_type": "UNETLoader",
+    "inputs": {
+      "unet_name": "fastvideo_fasth3_8step_v2_pruned_int8_convrot.safetensors",
+      "weight_dtype": "default"
+    }
+  },
+  "s13": {
+    "class_type": "CLIPLoader",
+    "inputs": {
+      "clip_name": "qwen3vl_32b_minimax_h3_nvfp4_awq.safetensors",
+      "type": "minimax",
+      "device": "default"
+    }
+  },
+  "s15": {
+    "class_type": "RandomNoise",
+    "inputs": {
+      "noise_seed": 793369680225544,
+      "control_after_generate": "fixed"
+    }
+  },
+  "s91": {
+    "class_type": "CreateVideo",
+    "inputs": {
+      "images": [
+        "s10",
+        0
+      ],
+      "audio": [
+        "s23",
+        0
+      ],
+      "fps": 24,
+      "bit_depth": "auto",
+      "color_space": "sRGB",
+      "codec": "none"
+    }
+  },
+  "s104": {
+    "class_type": "MiniMaxH3ImageToVideo",
+    "inputs": {
+      "clip": [
+        "s13",
+        0
+      ],
+      "vae": [
+        "s11",
+        0
+      ],
+      "first_frame": [
+        "n136",
+        0
+      ],
+      "prompt": "For the target video, at 0.00 seconds into the target video, <Picture 1> (from [Shot 1]) is fully referenced.\nintegrated_multimodal_description: [Shot 1] This is a live-action, highly stylized fashion video with a stark, high-contrast aesthetic and digital glitch overlays. The figure stands dead center against a plain off-white background that has a subtle, paper-like texture. The outfit is a layered, monochrome streetwear ensemble. The upper body is enveloped in a bulky, matte black puffer jacket with thick horizontal quilting and a central zipper, worn over a dark inner layer. The hands are tucked casually into the lower side pockets of the jacket. The lower body features loose-fitting, baggy black cargo pants with large side pockets, prominent seams, and a long, thin black fabric strap dangling freely from the left thigh area. The feet are clad in chunky, textured grey sneakers with intricate mesh detailing, thick soles, and dark grey laces tied neatly. The figure's head is completely concealed, creating an anonymous, edgy vibe. A black, textured hood is pulled up tightly, framing a black fabric face covering that reaches up to the bridge of the nose. Over the eyes, a pair of large, prominent round goggles with thick black frames and dark, opaque lenses completes the look. Cutting horizontally across the figure's midsection is a striking digital glitch effect. It consists of a thick, vibrant, solid red horizontal band, flanked by jagged, horizontal black streaks that blur and distort the fabric of the jacket behind it. The camera slowly pushes in on the static figure. As the camera moves, a low, synthesized bass drone is heard, and the thick red glitch band flickers violently, its edges stuttering horizontally, while the figure maintains a rigid, confident, and imposing stance, entirely motionless except for the digital distortion. [Shot 2] At 01.200, the camera cuts to a tight, dynamic close-up of the figure's head and upper shoulders, framed from a slightly low angle to emphasize dominance. The intricate textures of the headgear are now highly visible: the coarse weave of the black hood, the fine ribbing of the black face covering, and the smooth, matte finish of the thick black goggle frames. The dark, opaque lenses of the round goggles reflect a faint, unseen rectangular light source, adding depth. The camera executes a fast tilt-up motion. During this rapid upward movement, the figure slowly tilts their head downward, creating a contrasting motion. Simultaneously, a sharp, high-frequency digital stutter is heard as a secondary, localized digital glitch\u2014a rapid sequence of thin, horizontal red and black scanlines\u2014flashes across the reflective surface of the goggles for a split second. The bulky collar of the black puffer jacket frames the lower edge of the shot, remaining completely still. [Shot 3] At 02.500, the camera cuts to a medium close-up focusing specifically on the figure's lower torso, the baggy black cargo pants, and the hanging strap. The camera trucks right at a fast speed, creating a sense of lateral momentum. In response to the camera's movement, the figure shifts their weight from the left leg to the right leg. A heavy fabric rustle is heard as this subtle action causes the stiff fabric of the cargo pants to buckle and crease, creating deep shadows in the folds, while the long black fabric strap on the left thigh swings like a pendulum. As the strap swings, a new, jagged digital glitch effect abruptly tears across the left side of the frame. This glitch consists of sharp, alternating black and bright white horizontal lines that momentarily obscure the swinging strap and the side pocket of the pants, mimicking a corrupted video feed. The plain off-white background slides smoothly past in the background due to the trucking motion. [Shot 4] At 03.800, the camera cuts to a medium-wide shot, returning to a frontal perspective similar to the initial framing, but from a slightly closer vantage point. The camera zooms in quickly with a sudden, aggressive burst of speed. Reacting to the escalating energy, the figure abruptly pulls both hands out of the puffy black jacket pockets in a sharp, synchronized motion, and crosses their arms tightly over their chest. The fabric of the puffer jacket rustles and compresses. A loud, aggressive digital distortion crash is heard the moment the arms cross, and the primary thick red glitch band from Shot 1 reappears across the midsection. This time, the red band pulsates intensely, expanding vertically and horizontally, its edges fraying into chaotic, pixelated red and black blocks that briefly consume the figure's crossed arms and chest. The stark off-white background remains perfectly undisturbed, providing a clean canvas that highlights the aggressive digital distortion and the figure's final, striking pose as the clip concludes.\n\noverall_soundscape: The soundscape begins with a continuous, low-frequency synthesized bass drone that establishes a tense, modern atmosphere. As the first digital glitch flickers, a series of rapid, electrical crackling sounds and low-pitched digital stutters become clearly heard in the foreground. The moment the camera cuts to the close-up of the head, a sharp, high-frequency digital stutter cuts through the mix, synchronized with the visual flash on the goggles. Followed by this, a distinct, heavy fabric rustle is distinctly audible as the figure shifts their weight, the stiff material of the cargo pants rubbing together. Toward the end of the clip, as the figure sharply crosses their arms, a loud, aggressive digital distortion crash dominates the foreground, resembling a corrupted audio file tearing apart. This crash transitions into a final, heavy synthesized sub-bass impact that lingers as the video ends. A faint, rhythmic electronic clicking, like a fast metronome, plays consistently in the background throughout the entire sequence, tying the dynamic cuts together.\n\nnon_diegetic_music: A fast-paced, aggressive cyberpunk-style electronic track drives the sequence, featuring a heavy, distorted 808 bassline and rapid, syncopated hi-hat trills. The music maintains a high-energy, rhythmic pulse that perfectly matches the dynamic, multi-shot fashion edit and the digital glitch aesthetic.",
+      "width": [
+        "n141",
+        0
+      ],
+      "height": [
+        "n141",
+        1
+      ],
+      "length": [
+        "s107",
+        1
+      ]
+    }
+  },
+  "s107": {
+    "class_type": "ComfyMathExpression",
+    "inputs": {
+      "values.a": [
+        "s111",
+        0
+      ],
+      "expression": "max(5, round(a * 24)) + (5 - (max(5, round(a * 24)) % 17)) % 17"
+    }
+  },
+  "s111": {
+    "class_type": "PrimitiveFloat",
+    "inputs": {
+      "value": 5
+    }
+  },
+  "s127": {
+    "class_type": "BlockSparseAttention",
+    "inputs": {
+      "model": [
+        "s128",
+        0
+      ],
+      "selection": "vsa",
+      "selection.keep_percent": 10,
+      "start_percent": 0.2,
+      "end_percent": 1,
+      "dense_blocks": "",
+      "min_tokens": 12288,
+      "extra_tokens": 256,
+      "sink_conditioning": "exact_kv_and_rows",
+      "verbose": false
+    }
+  },
+  "s128": {
+    "class_type": "ModelAttentionBackend",
+    "inputs": {
+      "model": [
+        "s143",
+        0
+      ],
+      "attention": "comfy kitchen attention"
+    }
+  },
+  "s143": {
+    "class_type": "MiniMaxH3SigmaShift",
+    "inputs": {
+      "model": [
+        "s6",
+        0
+      ],
+      "shift_video": 10,
+      "shift_audio": 3
+    }
+  },
+  "n92": {
+    "class_type": "SaveVideo",
+    "inputs": {
+      "video": [
+        "s91",
+        0
+      ],
+      "filename_prefix": "video/MiniMax_H3",
+      "format": "auto",
+      "format.codec": "auto",
+      "codec": "auto"
+    }
+  },
+  "n136": {
+    "class_type": "LoadImage",
+    "inputs": {
+      "image": "red_line_barrier.png",
+      "upload": "image"
+    }
+  },
+  "n141": {
+    "class_type": "GetImageSize",
+    "inputs": {
+      "image": [
+        "n142",
+        0
+      ]
+    }
+  },
+  "n142": {
+    "class_type": "ImageScaleToTotalPixels",
+    "inputs": {
+      "image": [
+        "n136",
+        0
+      ],
+      "upscale_method": "nearest-exact",
+      "megapixels": 0.4,
+      "resolution_steps": 32
+    }
+  }
+}

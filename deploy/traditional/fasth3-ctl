@@ -1,0 +1,92 @@
+#!/usr/bin/env bash
+# ---------------------------------------------------------------------------
+# fasth3-ctl - control the FastH3 stack in the TRADITIONAL (non-systemd) layout
+#
+# Thin wrapper around deploy/traditional/run.sh that reproduces the privilege
+# separation of the systemd units: ComfyUI runs as `comfy`, the API as `fasth3`,
+# each with its own pid/log directory. Install it on PATH (install.sh does):
+#   sudo install -m 755 deploy/traditional/fasth3-ctl /usr/local/bin/fasth3-ctl
+#
+#   fasth3-ctl start [api|comfy|all]      (default: all)
+#   fasth3-ctl stop  [api|comfy|all]
+#   fasth3-ctl restart [api|comfy|all]
+#   fasth3-ctl status [api|comfy|all]
+#   fasth3-ctl logs [api|comfy|all]
+#
+# Run it with sudo to switch users; without sudo it just uses your own uid.
+# ---------------------------------------------------------------------------
+set -euo pipefail
+
+FASTH3_HOME=${FASTH3_HOME:-/opt/fasth3}
+RUN_SH=${RUN_SH:-$FASTH3_HOME/deploy/traditional/run.sh}
+API_USER=${API_USER:-fasth3}
+COMFY_USER=${COMFY_USER:-comfy}
+API_RUN_DIR=${API_RUN_DIR:-/run/fasth3-api}
+API_LOG_DIR=${API_LOG_DIR:-/var/log/fasth3-api}
+COMFY_RUN_DIR=${COMFY_RUN_DIR:-/run/fasth3-comfy}
+COMFY_LOG_DIR=${COMFY_LOG_DIR:-/var/log/fasth3-comfy}
+
+usage() {
+    printf 'usage: fasth3-ctl {start|stop|restart|status|logs} [api|comfy|all]\n'
+}
+
+# as <user> <run-dir> <log-dir> <run.sh args...>
+as_user() {
+    local user=$1 rundir=$2 logdir=$3
+    shift 3
+    if [ "$(id -u)" -eq 0 ] && id -u "$user" >/dev/null 2>&1; then
+        sudo -u "$user" env RUN_DIR="$rundir" LOG_DIR="$logdir" "$RUN_SH" "$@"
+    else
+        RUN_DIR="$rundir" LOG_DIR="$logdir" "$RUN_SH" "$@"
+    fi
+}
+
+api()   { as_user "$API_USER"   "$API_RUN_DIR"   "$API_LOG_DIR"   "$@"; }
+comfy() { as_user "$COMFY_USER" "$COMFY_RUN_DIR" "$COMFY_LOG_DIR" "$@"; }
+
+cmd=${1:-}
+svc=${2:-all}
+[ -n "$cmd" ] || { usage; exit 2; }
+[ -x "$RUN_SH" ] || { printf 'ERROR: %s not found or not executable\n' "$RUN_SH" >&2; exit 1; }
+
+case "$cmd" in
+    start|restart)
+        case "$svc" in
+            comfy) comfy "$cmd" comfy ;;
+            api)   api "$cmd" api ;;
+            all)   comfy "$cmd" comfy; api "$cmd" api ;;
+            *)     usage; exit 2 ;;
+        esac
+        ;;
+    stop)
+        case "$svc" in
+            comfy) comfy stop comfy ;;
+            api)   api stop api ;;
+            all)   api stop api; comfy stop comfy ;;   # API first, then engine
+            *)     usage; exit 2 ;;
+        esac
+        ;;
+    status)
+        case "$svc" in
+            comfy) comfy status comfy ;;
+            api)   api status api ;;
+            all)
+                rc=0
+                api status api  || rc=1
+                comfy status comfy || rc=1
+                exit "$rc"
+                ;;
+            *)     usage; exit 2 ;;
+        esac
+        ;;
+    logs)
+        case "$svc" in
+            comfy) comfy logs comfy ;;
+            api)   api logs api ;;
+            all)   api logs api & comfy logs comfy; wait ;;
+            *)     usage; exit 2 ;;
+        esac
+        ;;
+    -h|--help|help) usage ;;
+    *) usage; exit 2 ;;
+esac

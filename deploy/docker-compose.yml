@@ -1,0 +1,66 @@
+# FastH3 Comfy Server - container deployment
+#
+# PRIMARY PATH IS BARE METAL (best GPU throughput, and the documented route):
+#   see deploy/bare-metal/install.sh + docs/bare-metal-deployment.md
+#   -> host systemd ComfyUI engine + host uv environment for the API.
+#
+# This Compose file containersizes the API server. The ComfyUI engine is
+# EXTERNAL: point FASTH3_COMFY_URL at it. ComfyUI has no first-party container
+# image published by Comfy-Org (their docs list desktop/manual/cloud), so bring
+# your own engine container or use the host install. If you run your own engine
+# image, uncomment the `comfyui` service below and set its image.
+#
+# Usage:
+#   cd deploy
+#   echo "FASTH3_API_KEYS=your-api-key" > .env
+#   echo "FASTH3_COMFY_URL=http://comfyui:8188" >> .env   # your engine's address
+#   docker compose up -d --build
+
+services:
+  fasth3-api:
+    build:
+      context: ..
+      dockerfile: deploy/Dockerfile
+    container_name: fasth3-api
+    restart: unless-stopped
+    # The engine runs on the host in the bare-metal layout; from a container,
+    # reach it through the docker gateway.
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+    environment:
+      # e.g. http://host.docker.internal:8188 (host engine, bound to 0.0.0.0 or
+      # the docker bridge IP) or http://comfyui:8188 (engine service below).
+      FASTH3_COMFY_URL: ${FASTH3_COMFY_URL:?set FASTH3_COMFY_URL to your ComfyUI engine}
+      FASTH3_API_KEYS: ${FASTH3_API_KEYS:?set FASTH3_API_KEYS, e.g. in a .env next to this file}
+      FASTH3_URL_SIGNING_SECRET: ${FASTH3_URL_SIGNING_SECRET:-}
+      FASTH3_DATA_DIR: /srv/fasth3/data
+    ports:
+      - "8000:8000"   # put nginx/caddy TLS in front of this for production
+    volumes:
+      - fasth3-data:/srv/fasth3/data
+
+  # ---------------------------------------------------------------------------
+  # Optional: your own ComfyUI engine container (CUDA, with the FastH3 models).
+  # Set a real image or build from a source checkout you trust, then point
+  # FASTH3_COMFY_URL at http://comfyui:8188 and drop the extra_hosts entry.
+  # ---------------------------------------------------------------------------
+  # comfyui:
+  #   image: <your-comfyui-image-or-build>   # e.g. built from ComfyUI's Dockerfile
+  #   container_name: comfyui-engine
+  #   restart: unless-stopped
+  #   deploy:
+  #     resources:
+  #       reservations:
+  #         devices:
+  #           - driver: nvidia
+  #             count: 1
+  #             capabilities: [gpu]
+  #   volumes:
+  #     - comfy-models:/ComfyUI/models   # place the 4 FastH3 model files here
+  #     - comfy-output:/ComfyUI/output
+  #   command: --listen 0.0.0.0 --port 8188
+
+volumes:
+  fasth3-data:
+  # comfy-models:
+  # comfy-output:

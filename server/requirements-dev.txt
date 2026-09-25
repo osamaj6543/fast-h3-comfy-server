@@ -1,0 +1,6 @@
+# Development / test dependencies (CI, local test runs).
+#   uv venv && uv pip sync requirements-dev.lock
+-r requirements.txt
+
+pytest>=8.0
+pytest-asyncio>=0.23
