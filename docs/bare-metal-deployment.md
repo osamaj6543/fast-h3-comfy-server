@@ -183,7 +183,7 @@ publicly reachable: `curl -m 3 http://<public-ip>:8188/` must time out.
 
 ```bash
 sudo useradd -r -s /usr/sbin/nologin fasth3
-sudo git clone https://github.com/YOUR_ORG/fast-h3-comfy-server.git /opt/fasth3
+sudo git clone https://github.com/osamaj6543/fast-h3-comfy-server.git /opt/fasth3
 cd /opt/fasth3/server
 
 # uv environment + pinned, hash-verified dependency install from the lockfile

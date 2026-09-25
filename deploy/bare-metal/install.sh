@@ -106,7 +106,7 @@ chown -R comfy:comfy /home/comfy/ComfyUI
 echo "==> [6/7] FastH3 API server (uv environment from the hashed lockfile)"
 id -u fasth3 &>/dev/null || useradd -r -s /usr/sbin/nologin fasth3
 mkdir -p "$DATA_DIR"
-git clone https://github.com/YOUR_ORG/fast-h3-comfy-server.git "$FASTH3_HOME" 2>/dev/null || true
+git clone https://github.com/osamaj6543/fast-h3-comfy-server.git "$FASTH3_HOME" 2>/dev/null || true
 cd "$FASTH3_HOME/server"
 uv venv --python "${PYTHON_VERSION}" "$FASTH3_HOME/.venv"
 uv pip sync --python "$FASTH3_HOME/.venv" requirements.lock

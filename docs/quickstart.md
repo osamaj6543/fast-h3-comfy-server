@@ -86,7 +86,7 @@ except where shown.
 
 ```bash
 cd ~
-git clone https://github.com/YOUR_ORG/fast-h3-comfy-server.git
+git clone https://github.com/osamaj6543/fast-h3-comfy-server.git
 ```
 
 No git access? Copy the project folder from your computer instead:
