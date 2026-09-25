@@ -3,6 +3,12 @@
 Get **FastH3 video generation with audio** running on your GPU instance in two
 terminals. No systemd, no Docker, no advanced setup.
 
+> **Rented a Hyper.ai instance?** You log in as `root` in `/hyperai/home`, and
+> `~` means `/root` — not where you land. That one detail breaks most generic
+> guides. Follow this page for the two-terminal workflow, then use
+> [`docs/hyperai-deployment.md`](hyperai-deployment.md) for the automated
+> install, autostart across instance restarts, and public-IP exposure.
+
 **What you end up doing, every day:**
 
 | Terminal | Command you run | What it is |
@@ -29,14 +35,17 @@ a terminal stops that server.
 ## Path A — One command does everything
 
 This assumes the project folder is already on the server (Path B Step 1 shows
-how). Run it from inside the project folder:
+how). Run it from inside the project folder (`$PROJ`):
 
 ```bash
 sudo deploy/bare-metal/install.sh my-server.example.com my-secret-key-123 --mode=traditional
 ```
 
 Pick any name for your server (your real domain if you have one, otherwise the
-instance IP) and any password-like string as your API key.
+instance IP) and any password-like string as your API key. On a Hyper.ai
+instance there is usually no domain, so pass the **public IP** — that also skips
+TLS; `docs/hyperai-deployment.md` has the exact command and how to add HTTPS
+afterwards.
 
 That single command installs the engine, the API server, all four AI models,
 and a web server, then starts everything in the background.
@@ -79,26 +88,34 @@ sudo deploy/bare-metal/install.sh my-server.example.com my-secret-key-123 --mode
 
 ## Path B — Do it yourself, step by step
 
-Everything below runs as your normal user (e.g. `ubuntu`). No `sudo` needed
-except where shown.
+Everything below runs as whatever user you log in with. On most cloud VMs that
+is `ubuntu` (so add `sudo` where it says so); **on a Hyper.ai instance you are
+already `root`**, so `sudo` is optional and `~` is `/root`.
 
 ### Step 1 — Get the project files onto the instance
 
 ```bash
-cd ~
+# On Hyper.ai, land the project in /hyperai/home (your shell's working dir).
+cd /hyperai/home            # on other providers: cd ~
 git clone https://github.com/osamaj6543/fast-h3-comfy-server.git
+export PROJ=/hyperai/home/fast-h3-comfy-server   # other providers: ~/fast-h3-comfy-server
 ```
+
+`$PROJ` is used by every later step instead of a hardcoded `~` path, because on
+some providers those are two different directories.
 
 No git access? Copy the project folder from your computer instead:
 
 ```bash
 # run this on YOUR computer, not on the server
-scp -r ./fast-h3-comfy-server ubuntu@YOUR_SERVER_IP:~/
+# Hyper.ai logs in as root — note root@ and the /hyperai/home/ destination:
+scp -r ./fast-h3-comfy-server root@<YOUR_SERVER_IP>:/hyperai/home/
 ```
 
 ### Step 2 — Install uv (the Python manager we use)
 
 ```bash
+export UV_LINK_MODE=copy     # harmless locally, required if /hyperai/home is a network mount
 curl -LsSf https://astral.sh/uv/install.sh | sh
 source ~/.local/bin/env      # makes the `uv` command work right now
 uv --version                 # should print a version number
@@ -107,7 +124,7 @@ uv --version                 # should print a version number
 ### Step 3 — Install the AI engine (ComfyUI, headless)
 
 ```bash
-cd ~
+cd /hyperai/home              # other providers: cd ~
 uv venv --python 3.11 .venv                     # create the uv environment
 source ~/.venv/bin/activate                     # activate it
 uv pip install comfy-cli                        # ComfyUI's official installer
@@ -115,8 +132,10 @@ comfy install --nvidia --version 0.36.0 --fast-deps
 comfy which                                     # prints where ComfyUI landed
 ```
 
-`comfy which` usually prints `/home/<you>/ComfyUI`. **If it prints something
-else, use that path wherever this guide says `~/ComfyUI`.**
+`comfy which` prints your **home** directory plus `/ComfyUI` — e.g.
+`/home/ubuntu/ComfyUI`, or **`/root/ComfyUI`** when you are logged in as root on
+a Hyper.ai instance (where `~` is `/root`, *not* `/hyperai/home`). **Use
+whatever path it prints wherever this guide says `~/ComfyUI`.**
 
 > If the install command complains about `--fast-deps`, just run it again
 > without that flag: `comfy install --nvidia --version 0.36.0`
@@ -127,25 +146,28 @@ Copy-paste this whole block. It creates the folders and downloads each file to
 exactly the right place.
 
 ```bash
-M=~/ComfyUI/models
+M=~/ComfyUI/models        # Hyper.ai/root: /root/ComfyUI/models — or whatever `comfy which` said
 mkdir -p $M/diffusion_models $M/text_encoders $M/vae
 
 # 1. the video/audio model itself (biggest file — takes a while)
-curl -L -o $M/diffusion_models/fastvideo_fasth3_8step_v2_pruned_int8_convrot.safetensors \
+curl -L -C - -o $M/diffusion_models/fastvideo_fasth3_8step_v2_pruned_int8_convrot.safetensors \
   https://huggingface.co/FastVideo/FastVideo-FastH3-Comfy/resolve/main/diffusion_models/fastvideo_fasth3_8step_v2_pruned_int8_convrot.safetensors
 
 # 2. the text reader (understands your prompts)
-curl -L -o $M/text_encoders/qwen3vl_32b_minimax_h3_nvfp4_awq.safetensors \
+curl -L -C - -o $M/text_encoders/qwen3vl_32b_minimax_h3_nvfp4_awq.safetensors \
   https://huggingface.co/Comfy-Org/MiniMax-H3/resolve/main/text_encoders/qwen3vl_32b_minimax_h3_nvfp4_awq.safetensors
 
 # 3. the picture decoder
-curl -L -o $M/vae/minimax_h3_video_vae_int8_convrot.safetensors \
+curl -L -C - -o $M/vae/minimax_h3_video_vae_int8_convrot.safetensors \
   https://huggingface.co/Comfy-Org/MiniMax-H3/resolve/main/vae/minimax_h3_video_vae_int8_convrot.safetensors
 
 # 4. the sound decoder (this is what gives you audio)
-curl -L -o $M/vae/minimax_h3_audio_vae_fp32.safetensors \
+curl -L -C - -o $M/vae/minimax_h3_audio_vae_fp32.safetensors \
   https://huggingface.co/Comfy-Org/MiniMax-H3/resolve/main/vae/minimax_h3_audio_vae_fp32.safetensors
 ```
+
+`-C -` resumes a download that was interrupted — keep it on a slow or metered
+rented link, these four files total around 60 GB.
 
 Check they all arrived:
 
@@ -176,7 +198,7 @@ Make sure you're in a clean shell (if you activated an environment in Step 3,
 type `deactivate` first).
 
 ```bash
-cd ~/fast-h3-comfy-server/server
+cd $PROJ/server
 uv venv --python 3.11 .venv                 # separate uv environment for the API
 source .venv/bin/activate                   # activate it
 uv pip sync requirements.lock               # installs the exact tested versions
@@ -190,12 +212,16 @@ in this folder.)
 
 ## The two terminals
 
+> New terminal? Re-run the `export PROJ=…` line from Step 1 first — exports live
+> in one shell, so `$PROJ` is empty until you set it again. (Or paste the full
+> path instead; it is short.)
+
 ### Terminal 1 — start the engine (leave it running)
 
 Open your first terminal and run:
 
 ```bash
-cd ~/ComfyUI
+cd ~/ComfyUI                # or the path `comfy which` printed
 source ~/.venv/bin/activate
 python main.py --listen 127.0.0.1 --port 8188 --fast
 ```
@@ -209,7 +235,7 @@ terminal open.** Nothing else happens in it.
 Open a **second** terminal (or a second SSH session) and run:
 
 ```bash
-cd ~/fast-h3-comfy-server/server
+cd $PROJ/server
 source .venv/bin/activate
 python -m uvicorn app.main:app --host 127.0.0.1 --port 8000
 ```
@@ -256,7 +282,7 @@ faster. A 2-second clip is the quickest way to test.
 Your videos are also saved on disk automatically:
 
 ```bash
-ls -lh ~/fast-h3-comfy-server/server/data/outputs/
+ls -lh $PROJ/server/data/outputs/
 ```
 
 **Writing prompts:** describe the scene, then the shots and camera moves, and
@@ -281,6 +307,7 @@ always describe the sound (that's what makes the audio match). More examples:
 ## Next steps (only when you want them)
 
 - **Make it a real public API** (HTTPS, API keys, auto-restart, run without a terminal): `docs/bare-metal-deployment.md`
+- **Rented a Hyper.ai instance?** Provider-specific paths, `root` vs `~`, public-IP exposure, autostart across instance restarts: `docs/hyperai-deployment.md`
 - **All the request options and sample prompts** (resolutions, durations, image-to-video): `docs/api-usage.md`
 - **Keep both servers running after you close the terminal:**
   ```bash

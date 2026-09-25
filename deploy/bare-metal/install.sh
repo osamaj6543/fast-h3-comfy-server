@@ -20,6 +20,11 @@
 #   Aliases: --traditional == --mode=traditional, --no-systemd == same,
 #            --no-services == --mode=none
 #
+# On rented GPU instances (Hyper.ai, RunPod, ...) the driver is already
+# installed and you are root: pass the instance IP instead of a domain (TLS is
+# then skipped) and add --mode=traditional if there is no systemd. See
+# docs/hyperai-deployment.md.
+#
 # Everything Python is managed by uv: uv installs its own CPython 3.11, so no
 # apt python3.11 / virtualenv tooling is required.
 set -euo pipefail

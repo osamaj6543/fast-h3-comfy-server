@@ -8,7 +8,9 @@ professional REST API designed as the backend for your own frontend platform.
 
 > **New here?** Start with **[docs/quickstart.md](docs/quickstart.md)** — a
 > beginner-friendly guide that gets the engine running in one terminal and the
-> API in another (plus a single command that installs everything).
+> API in another (plus a single command that installs everything). Renting your
+> GPU on Hyper.ai? Start with
+> **[docs/hyperai-deployment.md](docs/hyperai-deployment.md)** instead.
 
 ```
 [Your Frontend]  ──HTTPS──▶  [FastH3 API Server (this repo)]
@@ -98,6 +100,8 @@ fast-h3-comfy-server/
 ├── docs/
 │   ├── minimax-h3-fastvideo.md    # FastH3 model/workflow documentation
 │   ├── bare-metal-deployment.md   # step-by-step GPU instance deployment guide
+│   ├── hyperai-deployment.md      # the same, for Hyper.ai instances (root, /hyperai/home, IP)
+│   ├── quickstart.md              # noob-friendly two-terminal path
 │   └── api-usage.md               # API guide + sample prompts (T2V & I2V)
 ├── scripts/
 │   └── convert_workflows.py  # flattens subgraph templates -> API-format JSON
@@ -187,7 +191,10 @@ all links, enforces the 8-step schedule, and writes
 Every Python environment (ComfyUI engine + API server) is created and managed by
 **uv** — uv installs its own CPython 3.11, so no distro Python packages are
 required, and the API is installed from the hashed lockfile for reproducibility.
-See `docs/bare-metal-deployment.md` for the full step-by-step guide.
+See `docs/bare-metal-deployment.md` for the full step-by-step guide, and
+**`docs/hyperai-deployment.md` if you rented your GPU on Hyper.ai** (you are
+`root`, the working directory is `/hyperai/home`, the driver is preinstalled, and
+you have an IP rather than a domain).
 
 ### One-shot (Ubuntu 22.04/24.04, NVIDIA driver preinstalled)
 

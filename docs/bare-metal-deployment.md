@@ -9,6 +9,14 @@ cloud GPU instance (Ubuntu 22.04/24.04 + NVIDIA).
 > explains each step so you can audit, adapt, or troubleshoot it — follow it
 > manually the first time.
 
+> **Rented a GPU instance (Hyper.ai, RunPod, Lambda, Vast, …)?** This guide
+> assumes a plain Ubuntu VM with a `sudo`-capable non-root user and `~` meaning
+> the project directory. Hosted images differ — you are usually already `root`,
+> `~` is **not** your working directory, the driver is preinstalled, and you have
+> an IP instead of a domain. Use
+> [`docs/hyperai-deployment.md`](hyperai-deployment.md) instead; it maps every
+> step below onto a Hyper.ai instance.
+
 ## What you will end up with
 
 ```
@@ -67,6 +75,13 @@ sudo apt-get install -y git curl nginx certbot python3-certbot-nginx
 No `python3.11` package is installed on purpose: uv provides the interpreter.
 
 ## Step 2 — NVIDIA driver
+
+> **Skip this step if `nvidia-smi` already works.** Every major GPU rental
+> provider (Hyper.ai, RunPod, Lambda, Vast, Paperspace) ships an image with the
+> driver and CUDA-matched PyTorch preinstalled. Installing a distro driver over
+> the top of a working one — or one that then wants a `reboot` you cannot
+> perform inside a container-style instance — is the single most common way to
+> brick a rented box. Change image in the provider's console instead.
 
 ```bash
 sudo ubuntu-drivers install        # or: sudo apt install nvidia-driver-550-server
